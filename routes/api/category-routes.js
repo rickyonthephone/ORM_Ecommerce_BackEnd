@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const { Model } = require('sequelize/types');
 const { Category, Product } = require('../../models');
 
 // The `/api/categories` endpoint
@@ -12,19 +13,44 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   // find one category by its `id` value
   // be sure to include its associated Products
-  Category.findOne({where:{id: req.params.id}, include: [Product]}).then((category) => {
+  Category.findOne({where:{
+    id: req.params.id
+    }, 
+    include: {
+      model: Product,
+      attributes: ['category_id']
+    }
+  }).then((category) => {
     res.json(category)
   })
 });
 
 router.post('/', (req, res) => {
   // create a new category
-  Category.create(req.body).then(category => res.json(category))
+  Category.create({
+    category_name: req.body.category_name
+  }).then(category => res.json(category))
+    .catch(err =>{console.log(err);
+    res.status(500).json(err);
+    });
 });
 
 router.put('/:id', (req, res) => {
   // update a category by its `id` value
-  Category.update(req.body, {where:{id: req.params.id}}).then(category => res.json(category))
+  Category.update(
+    {category_name: req.body.category_name}, 
+    {where:{id: req.params.id}
+  }).then(category => {
+    if (!category) {
+      res.status(404).json ({message: 'No category with that ID'});
+      return;
+      }
+      res.json(category);
+      })
+      .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
 router.delete('/:id', (req, res) => {
